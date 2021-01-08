@@ -12,6 +12,7 @@ This app just fetches my repositories from Github and display them.
 
 * The binary is 25MB large, takes 35MB of memory and runs in 300ms using GraalVM native image
 * The JAR is 7.7MB large, takes 300MB of memory and runs in 1.4s without GraalVM native image
+    * not counting the size of the JRE/JDK you use to run it.
 
 ### With Graal VM
 
