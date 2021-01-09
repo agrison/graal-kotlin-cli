@@ -1,13 +1,10 @@
-import com.google.gson.FieldNamingPolicy
-import com.google.gson.GsonBuilder
+import com.google.gson.*
 import com.google.gson.reflect.TypeToken
-import de.vandermeer.asciitable.AsciiTable
-import de.vandermeer.asciitable.CWC_FixedWidth
+import de.vandermeer.asciitable.*
 import de.vandermeer.skb.interfaces.transformers.textformat.TextAlignment.CENTER
 import org.apache.commons.io.IOUtils
 import java.lang.System.currentTimeMillis
-import java.net.HttpURLConnection
-import java.net.URL
+import java.net.*
 import java.util.concurrent.atomic.AtomicLong
 
 fun main(args: Array<String>) {
@@ -43,40 +40,29 @@ fun List<Repository>.top20() = filter { !it.fork }.sortedByDescending { it.starg
 
 // region ----- Table display -----
 fun display(repositories: List<Repository>) {
-    fun display(table: AsciiTable, r: Repository) {
-        with(table) {
-            val row = addRow(
-                r.fullName,
-                r.description ?: "-",
-                r.language ?: "-",
-                r.stargazersCount,
-                r.watchers,
-                r.forksCount
-            )
-            row.cells.subList(2, 6).forEach { it.context.textAlignment = CENTER }
-            addRule()
-        }
+    val columns = linkedMapOf(
+        "Name" to 40, "Description" to 80, "Language" to 15, "Stars" to 10, "Watchers" to 10, "Forks" to 10
+    )
+
+    fun AT_Row.layout() = cells.subList(2, 6).forEach { it.context.textAlignment = CENTER }
+
+    fun AsciiTable.addRepository(r: Repository) {
+        addRow(r.entries()).layout()
+        addRule()
     }
 
     AsciiTable().let { table ->
-        val cwc = CWC_FixedWidth()
-        with(cwc) {
-            add(40) // name
-            add(80) // description
-            add(15) // language
-            add(10) // stars
-            add(10) // watchers
-            add(10) // forks
+        CWC_FixedWidth().let { cwc ->
+            columns.values.forEach { cwc.add(it) }
+            with(table) {
+                addRule()
+                addRow(columns.keys).layout()
+                addRule()
+                repositories.forEach { table.addRepository(it) }
+                renderer.cwc = cwc
+            }
+            println(table.render())
         }
-        with(table) {
-            addRule()
-            val row = addRow("Name", "Description", "Language", "Stars", "Watchers", "Forks")
-            row.cells.subList(2, 6).forEach { it.context.textAlignment = CENTER }
-            addRule()
-            repositories.forEach { reps -> display(table, reps) }
-            table.renderer.cwc = cwc
-        }
-        println(table.render())
     }
 }
 // endregion
@@ -93,7 +79,12 @@ data class Repository(
     var forksCount: Int, var watchers: Int,
     var language: String?, var size: Int,
     var owner: Owner, var fork: Boolean
-)
+) {
+    fun entries() = listOf(
+        fullName, description ?: "-", language ?: "-",
+        stargazersCount.toString(), watchers.toString(), forksCount.toString()
+    )
+}
 // endregion
 
 // region ----- timer -----
